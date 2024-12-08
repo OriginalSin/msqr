@@ -1,4 +1,4 @@
-import imgUrl from './www/gfx/epistemex.png';
+import imgUrl from './www/gfx/19772.jpg';
 
 var img = new Image,
     options, timer,

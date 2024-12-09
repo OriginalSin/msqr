@@ -1,22 +1,28 @@
 import imgUrl from './www/gfx/19772.jpg';
+import msqr from './src/msqr.js';
+import dashboard from './src/dashboard.js';
+// import Utils from './Utils.js';
 
-var img = new Image,
-    options, timer,
-    ctx = c.getContext("2d"),
+const canva = document.createElement('canvas');
+canva.width = canva.height = 256;
+document.body.append(canva);
+
+var options, timer,
+    ctx = canva.getContext("2d"),
     render = renderText,
-    dash = new Dashboard({callback: optionHandler}).add([
+    dash = new dashboard({callback: optionHandler}).add([
         {type: "text", text: "<h2>Marching Squares Demo</h2>", raw: true},
         {type: "textbox", id: "text", bind: "text", label: "Text", text: "Epistemex", live: true},
-        {type: "slider", bind: "rotation", label: "Rotation", min:0, max:359, value:2, live: true},
-        {type: "slider", id: "rotChar", bind: "rotChar", label: "Letter rotation", min:0, max:359, value: 170, live: true},
-        {type: "slider", id: "radius", bind: "radius", label: "Radius", min:50, max:400, value:200, live: true},
+        {type: "slider", bind: "rotation", label: "Rotation", min:0, max:359, value:0, live: true},
+        {type: "slider", id: "rotChar", bind: "rotChar", label: "Letter rotation", min:0, max:359, value: 0, live: true},
+        {type: "slider", id: "radius", bind: "radius", label: "Radius", min:50, max:400, value:0, live: true},
         {type: "slider", id: "fontSize", bind: "fontSize", label: "Font size", min: 50, max:450, value:300, live: true},
         {type: "separator"},
         {type: "slider", bind: "maxShapes", label: "Max shapes", min:1, max:20, live: true},
-        {type: "slider", bind: "alpha", label: "Alpha", min:0, max:254, value: 254, live: true},
+        {type: "slider", bind: "alpha", label: "Alpha", min:0, max:254, value: 80, live: true},
         {type: "slider", bind: "padding", label: "Padding", min:-9, max:9, value: 0, live: true},
-        {type: "slider", bind: "bleed", label: "Bleed mask", min:0, max:10, value: 5, live: true},
-        {type: "slider", bind: "tolerance", label: "Tolerance", min:0, max:4, step: 0.1, value: 1.1, live: true},
+        {type: "slider", bind: "bleed", label: "Bleed mask", min:0, max:10, value: 0, live: true},
+        {type: "slider", bind: "tolerance", label: "Tolerance", min:0, max:4, step: 0.1, value: 0, live: true},
         {type: "checkbox", bind: "align", id: "cAlign", label: "Align", checked: true},
         {type: "separator"},
         {type: "checkbox", id: "useImage", label: "Use image"},
@@ -32,9 +38,27 @@ var img = new Image,
         {type: "link", text: "Download from GitHub", value: "https://github.com/epistemex/msqr"}
     ]);
 
-img.onload = update;
-img.src = imgUrl;
 
+
+    // let rgb = [0,0,0,0];
+let rgb;
+canva.addEventListener('mousedown', ev => {
+    const {clientX:x, clientY:y} = ev;
+    const {width, height} = canva;
+
+    const imageData = ctx.getImageData(0, 0, width, height);
+    let data = new Uint8Array(imageData.data.buffer);
+
+    const {width:w, height:h} = imageData;
+
+    let pos = w * y + x;
+    let p = 4 * pos;
+    rgb = [pos, data[p], data[p+1], data[p+2]];
+    update();
+
+    console.log(rgb, data[pos+3], x, y)
+// debugger
+});
 function optionHandler(e) {
     switch(e.id) {
         case "sPadding":
@@ -69,7 +93,7 @@ function renderText() {
         rotChar = options.rotChar / 180 * Math.PI,
         step = Math.PI * 2 / len;
 
-    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.clearRect(0, 0, canva.width, canva.height);
     if (!len) return;
 
     ctx.textBaseline = "middle";
@@ -78,7 +102,7 @@ function renderText() {
     ctx.fillStyle = "#606060";
 
     for(var i = 0; i < len; i++) {
-        ctx.setTransform(1, 0, 0, 1, c.width * 0.5, c.height * 0.5);
+        ctx.setTransform(1, 0, 0, 1, canva.width * 0.5, canva.height * 0.5);
         ctx.rotate(i * step + offset);
         ctx.translate(options.radius, 0);
         ctx.rotate(rotChar);
@@ -89,24 +113,27 @@ function renderText() {
 
 function renderImage() {
     options = dash.getBound();
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.setTransform(1, 0, 0, 1, c.width * 0.5, c.height * 0.5);
+    ctx.clearRect(0, 0, canva.width, canva.height);
+    ctx.setTransform(1, 0, 0, 1, canva.width * 0.5, canva.height * 0.5);
     ctx.rotate(options.rotation / 180 * Math.PI);
     ctx.scale(1.3, 1.3);
+    // ctx.drawImage(img, 0, 0);
     ctx.drawImage(img, -img.width * 0.5, -img.height * 0.5);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
 }
 
 function trace() {
-
+    if (!rgb) return;
+    options.rgb = rgb;
     var time1 = performance.now(),
-        paths = MSQR(ctx, options),
+        paths = msqr(ctx, options),
         time = performance.now() - time1,
         cnt = 0;
 
     paths.forEach(function(path) {
         cnt += path.length
     });
+    console.log('paths', paths.length, paths);
 
     dash.value("lCount", paths.length);
     dash.value("lTime", time.toFixed(2));
@@ -114,7 +141,7 @@ function trace() {
     dash.value("lPts", cnt);
 
     if (!options.showText) {
-        ctx.clearRect(0, 0, c.width, c.height)
+        ctx.clearRect(0, 0, canva.width, canva.height)
     }
 
     if (options.showPath) {
@@ -151,5 +178,8 @@ function trace() {
             ctx.rect(points[i].x-1.5, points[i].y-1.5,4,4);
     }
 }
+var img = new Image();
+img.src = imgUrl;
+update();
 
 export default {};

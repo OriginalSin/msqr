@@ -1,3 +1,6 @@
+import Utils from '../Utils.js';
+
+
 /*!
 	MSQR v0.2.1 alpha
 	(c) 2016 K3N / Epistemex
@@ -69,7 +72,9 @@ function MSQR(src, options) {
 		retPath     = !!options.path2D,
 		ctx2, inc;
 
-	// check bounds
+var rgb = options.rgb;
+lastPos = rgb[0];
+		// check bounds
 	if (cx < 0 || cy < 0 || cx >= w  || cy >= h ||
 		cw < 1 || ch < 1 || cx + cw > w || cy + ch > h)
 		return [];
@@ -153,17 +158,26 @@ function MSQR(src, options) {
 			step, pStep = 9,
 			steps = [9, 0, 3, 3, 2, 0, 9, 3, 1, 9, 1, 1, 2, 0, 2, 9];
 
-		data = new Uint32Array(ctx.getImageData(cx, cy, cw, ch).data.buffer);
+		let	buf = ctx.getImageData(cx, cy, cw, ch).data.buffer;
+		// let data1 = new Uint8Array(buf);
+
+		data = new Uint32Array(buf);
 		l = data.length;
 
 		// start position
 		for(i = lastPos; i < l; i++) {
-			if ((data[i]>>>24) > alpha) {
-				start = lastPos = i;
-				break
-			}
-		}
+			const trgb = Utils.dec2rgb(data[i]);
 
+			const raz = Math.max(
+                Math.abs(rgb[1] - trgb[0]),
+                Math.abs(rgb[2] - trgb[1]),
+                Math.abs(rgb[3] - trgb[2]),
+            );
+            if (raz > alpha) {
+ 				start = lastPos = i;
+				 break;
+            }
+		}
 		// march from start point until start point
 		if (start >= 0) {
 
@@ -197,7 +211,18 @@ function MSQR(src, options) {
 
 		// lookup pixel
 		function getState(x, y) {
-			return (x >= 0 && y >= 0 && x < cw && y < ch) ? (data[y * cw + x]>>>24) > alpha : false
+			// return (x >= 0 && y >= 0 && x < cw && y < ch) ? (data[y * cw + x]>>>24) > alpha : false;
+			const p = y * cw + x;
+			const v = data[p];
+			const trgb = Utils.dec2rgb(v);
+			const raz = Math.max(
+                Math.abs(rgb[1] - trgb[0]),
+                Math.abs(rgb[2] - trgb[1]),
+                Math.abs(rgb[3] - trgb[2]),
+            );
+			// return (x >= 0 && y >= 0 && x < cw && y < ch) ? raz < alpha : false;
+			const out = (x >= 0 && y >= 0 && x < cw && y < ch) ? raz < alpha : false;
+			return out;
 		}
 
 		// Parse 2x2 pixels to determine next step direction.
@@ -372,4 +397,4 @@ MSQR.getBounds = function(points) {
 	}
 };
 
-if (typeof exports !== "undefined") exports.MSQR = MSQR;
+export default MSQR;

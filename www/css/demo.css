@@ -1,13 +1,22 @@
 html, body {
-	margin: 0
+	margin: 0;
+	padding: 0;
 	}
 body {
 	background:#333;
-	}
+}
+canvas {
+	width: 256px;
+	height: 256px;
+}
 #c {
 	background:#2f2f2f;
-	margin:20px 0 0 345px;
-	}
+	/* position: absolute;
+    left: 22rem; */
+	width: 256px;
+	height: 256px;
+	/* margin:20px 0 0 345px; */
+}
 h2 {
 	padding-left:11px
 	}
@@ -15,7 +24,7 @@ h2 {
 .dashboard {
 	background: #444;
 	position: fixed;
-	left:0;
+	left:22rem;
 	top:0;
 	width:320px;
 	height:100%;
